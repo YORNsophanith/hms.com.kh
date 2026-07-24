@@ -1,0 +1,1075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HMS — Hotel Management System</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --primary: #1a3a5c;
+    --primary-light: #245080;
+    --primary-dark: #102840;
+    --accent: #c8963e;
+    --accent-light: #e8b86d;
+    --accent-dark: #a07030;
+    --bg: #f0f4f8;
+    --sidebar-bg: #0f2335;
+    --sidebar-text: #b8cfe0;
+    --sidebar-active: #c8963e;
+    --card-bg: #ffffff;
+    --text-main: #1e2d3d;
+    --text-secondary: #5a7a94;
+    --text-muted: #8da8bc;
+    --border: #d6e4ef;
+    --success: #2a7d4f;
+    --success-bg: #e6f4ed;
+    --warning: #c87b1a;
+    --warning-bg: #fdf3e6;
+    --danger: #c0392b;
+    --danger-bg: #fdecea;
+    --info: #1a6fa8;
+    --info-bg: #e6f2fb;
+    --radius: 8px;
+    --radius-lg: 14px;
+    --shadow: 0 2px 10px rgba(15,35,53,0.08);
+    --shadow-md: 0 4px 20px rgba(15,35,53,0.12);
+    --transition: 0.22s ease;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text-main); display: flex; min-height: 100vh; font-size: 14px; }
+
+  /* SIDEBAR */
+  #sidebar {
+    width: 230px; min-height: 100vh; background: var(--sidebar-bg);
+    display: flex; flex-direction: column; position: fixed; top: 0; left: 0; z-index: 100;
+    transition: width var(--transition), transform var(--transition);
+    overflow: hidden;
+  }
+  #sidebar.collapsed { width: 60px; }
+  .sidebar-logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 18px 16px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    white-space: nowrap; overflow: hidden;
+  }
+  .sidebar-logo .logo-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: var(--accent); display: flex; align-items: center; justify-content: center;
+    color: white; font-size: 16px; flex-shrink: 0;
+  }
+  .sidebar-logo .logo-text { font-weight: 700; font-size: 16px; color: #fff; letter-spacing: 0.3px; }
+  .sidebar-logo .logo-sub { font-size: 10px; color: var(--sidebar-text); letter-spacing: 0.5px; }
+  .nav-section-label {
+    font-size: 10px; font-weight: 600; color: rgba(184,207,224,0.45);
+    letter-spacing: 1.2px; text-transform: uppercase;
+    padding: 18px 20px 6px; white-space: nowrap; overflow: hidden;
+  }
+  #sidebar.collapsed .nav-section-label { opacity: 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 9px 16px; color: var(--sidebar-text);
+    cursor: pointer; transition: background var(--transition), color var(--transition);
+    border-left: 3px solid transparent; white-space: nowrap; overflow: hidden;
+    font-size: 13.5px;
+  }
+  .nav-item i { font-size: 15px; flex-shrink: 0; width: 20px; text-align: center; }
+  .nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+  .nav-item.active { background: rgba(200,150,62,0.15); color: var(--accent); border-left-color: var(--accent); }
+  .nav-badge {
+    margin-left: auto; background: var(--danger); color: #fff;
+    font-size: 10px; font-weight: 700; border-radius: 10px;
+    padding: 1px 6px; flex-shrink: 0;
+  }
+  .sidebar-footer { margin-top: auto; padding: 14px 16px; border-top: 1px solid rgba(255,255,255,0.06); }
+  .user-widget { display: flex; align-items: center; gap: 10px; white-space: nowrap; overflow: hidden; }
+  .user-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .user-name { font-size: 13px; font-weight: 600; color: #fff; }
+  .user-role { font-size: 11px; color: var(--sidebar-text); }
+
+  /* TOPBAR */
+  #topbar {
+    position: fixed; top: 0; left: 230px; right: 0; height: 60px;
+    background: var(--card-bg); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px; padding: 0 20px;
+    z-index: 90; transition: left var(--transition); box-shadow: var(--shadow);
+  }
+  #topbar.shifted { left: 60px; }
+  .topbar-toggle { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 18px; padding: 6px; border-radius: 6px; }
+  .topbar-toggle:hover { background: var(--bg); color: var(--primary); }
+  .topbar-title { font-size: 16px; font-weight: 600; color: var(--text-main); }
+  .topbar-breadcrumb { font-size: 12px; color: var(--text-muted); }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .topbar-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 12px; color: var(--text-secondary); cursor: pointer; font-size: 13px; display: flex; align-items: center; gap: 6px; transition: all var(--transition); }
+  .topbar-btn:hover { background: var(--bg); color: var(--primary); border-color: var(--primary); }
+  .notif-btn { position: relative; }
+  .notif-dot { position: absolute; top: 4px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: var(--danger); border: 2px solid white; }
+
+  /* MAIN */
+  #main {
+    margin-left: 230px; margin-top: 60px; flex: 1; padding: 24px;
+    transition: margin-left var(--transition); min-height: calc(100vh - 60px);
+  }
+  #main.shifted { margin-left: 60px; }
+
+  /* PAGES */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* CARDS */
+  .card { background: var(--card-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 20px; margin-bottom: 20px; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .card-title { font-size: 15px; font-weight: 600; color: var(--text-main); }
+  .card-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* STATS ROW */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+  .stat-card {
+    background: var(--card-bg); border-radius: var(--radius-lg); padding: 18px 20px;
+    box-shadow: var(--shadow); display: flex; align-items: center; gap: 16px; position: relative; overflow: hidden;
+  }
+  .stat-card::after { content: ''; position: absolute; right: -10px; top: -10px; width: 70px; height: 70px; border-radius: 50%; opacity: 0.06; }
+  .stat-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .stat-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+  .stat-value { font-size: 22px; font-weight: 700; color: var(--text-main); }
+  .stat-trend { font-size: 11px; display: flex; align-items: center; gap: 3px; margin-top: 3px; }
+  .trend-up { color: var(--success); }
+  .trend-down { color: var(--danger); }
+
+  /* GRIDS */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { font-size: 11.5px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 14px; border-bottom: 1px solid var(--border); text-align: left; background: #f7fafc; }
+  td { padding: 11px 14px; border-bottom: 1px solid #eef3f7; color: var(--text-main); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #f7fafc; }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; border-radius: 20px; padding: 3px 9px; }
+  .badge-success { background: var(--success-bg); color: var(--success); }
+  .badge-warning { background: var(--warning-bg); color: var(--warning); }
+  .badge-danger { background: var(--danger-bg); color: var(--danger); }
+  .badge-info { background: var(--info-bg); color: var(--info); }
+  .badge-neutral { background: #eef3f7; color: var(--text-secondary); }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius); border: none; cursor: pointer; font-size: 13px; font-weight: 500; transition: all var(--transition); }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { background: var(--primary-light); }
+  .btn-accent { background: var(--accent); color: white; }
+  .btn-accent:hover { background: var(--accent-dark); }
+  .btn-outline { background: none; border: 1px solid var(--border); color: var(--text-secondary); }
+  .btn-outline:hover { border-color: var(--primary); color: var(--primary); background: #f0f6ff; }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-danger:hover { background: #a93226; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-icon { padding: 6px 8px; }
+
+  /* FORMS */
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12.5px; font-weight: 500; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+  .form-control {
+    width: 100%; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 9px 12px; font-size: 13.5px; color: var(--text-main); background: #fff;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    outline: none;
+  }
+  .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,58,92,0.1); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  /* SEARCH BAR */
+  .search-bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); }
+  .search-bar i { color: var(--text-muted); }
+  .search-bar input { border: none; background: none; outline: none; font-size: 13.5px; color: var(--text-main); flex: 1; }
+
+  /* MODAL */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: var(--radius-lg); width: 520px; max-width: 95vw; box-shadow: var(--shadow-md); overflow: hidden; }
+  .modal-header { padding: 18px 22px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 15px; font-weight: 600; }
+  .modal-close { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 18px; padding: 2px 6px; border-radius: 4px; }
+  .modal-close:hover { background: var(--bg); color: var(--danger); }
+  .modal-body { padding: 22px; }
+  .modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+  /* NOTIFICATION */
+  .alert { border-radius: var(--radius); padding: 12px 16px; font-size: 13px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .alert-warning { background: var(--warning-bg); color: var(--warning); border-left: 3px solid var(--warning); }
+  .alert-danger { background: var(--danger-bg); color: var(--danger); border-left: 3px solid var(--danger); }
+  .alert-success { background: var(--success-bg); color: var(--success); border-left: 3px solid var(--success); }
+  .alert-info { background: var(--info-bg); color: var(--info); border-left: 3px solid var(--info); }
+
+  /* PROFILE */
+  .profile-avatar-lg { width: 90px; height: 90px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: 700; position: relative; }
+  .avatar-edit { position: absolute; bottom: 0; right: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; font-size: 12px; border: 2px solid white; }
+
+  /* SECTION HEADER */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .section-title { font-size: 20px; font-weight: 700; color: var(--text-main); }
+  .section-sub { font-size: 13px; color: var(--text-secondary); margin-top: 3px; }
+
+  /* TABS */
+  .tab-group { display: flex; gap: 2px; background: var(--bg); border-radius: var(--radius); padding: 3px; margin-bottom: 20px; border: 1px solid var(--border); width: fit-content; }
+  .tab-btn { padding: 7px 16px; border-radius: 6px; border: none; background: none; cursor: pointer; font-size: 13px; color: var(--text-secondary); font-weight: 500; transition: all var(--transition); }
+  .tab-btn.active { background: white; color: var(--primary); box-shadow: var(--shadow); }
+
+  /* PROGRESS BAR */
+  .progress-bar { height: 6px; background: #e8f0f6; border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+  /* LOGIN PAGE */
+  #page-login {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--primary-light) 100%);
+  }
+  .login-card { background: white; border-radius: 20px; width: 420px; padding: 44px 40px; box-shadow: 0 30px 80px rgba(0,0,0,0.35); position: relative; }
+  .login-bg-decor {
+    position: absolute; inset: 0; overflow: hidden; border-radius: 20px; pointer-events: none;
+  }
+  .login-tagline {
+    position: absolute; bottom: 32px; left: 0; right: 0;
+    text-align: center; color: rgba(255,255,255,0.35); font-size: 12px; letter-spacing: 1px;
+  }
+  .login-logo { text-align: center; margin-bottom: 28px; }
+  .login-logo .logo-big { width: 60px; height: 60px; border-radius: 16px; background: var(--primary); display: flex; align-items: center; justify-content: center; color: white; font-size: 26px; margin: 0 auto 12px; }
+  .login-logo h2 { font-size: 22px; font-weight: 700; color: var(--text-main); }
+  .login-logo p { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+  .login-input-group { position: relative; margin-bottom: 14px; }
+  .login-input-group i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 15px; }
+  .login-input-group input { width: 100%; padding: 11px 12px 11px 38px; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 14px; outline: none; color: var(--text-main); transition: border-color var(--transition); }
+  .login-input-group input:focus { border-color: var(--primary); }
+  .login-btn { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: var(--radius); font-size: 15px; font-weight: 600; cursor: pointer; transition: background var(--transition); margin-top: 6px; }
+  .login-btn:hover { background: var(--primary-light); }
+  .forgot-link { text-align: right; margin-top: -8px; margin-bottom: 16px; }
+  .forgot-link a { font-size: 12px; color: var(--primary); text-decoration: none; cursor: pointer; }
+  .forgot-link a:hover { text-decoration: underline; }
+  .login-footer { text-align: center; margin-top: 20px; font-size: 12px; color: var(--text-muted); }
+
+  /* CHART CONTAINERS */
+  .chart-container { position: relative; }
+
+  /* ACTIVITY FEED */
+  .activity-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eef3f7; }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-dot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+  .activity-text { font-size: 13px; color: var(--text-main); flex: 1; }
+  .activity-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* LOW STOCK */
+  .stock-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eef3f7; }
+  .stock-item:last-child { border-bottom: none; }
+  .stock-info { flex: 1; }
+  .stock-name { font-size: 13px; font-weight: 500; color: var(--text-main); }
+  .stock-qty { font-size: 12px; color: var(--danger); font-weight: 600; }
+  .stock-progress { margin-top: 5px; }
+
+  /* USER MANAGEMENT */
+  .user-card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .user-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; text-align: center; box-shadow: var(--shadow); }
+  .user-card-avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: white; margin: 0 auto 10px; }
+  .user-card-name { font-size: 14px; font-weight: 600; }
+  .user-card-role { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .user-card-actions { margin-top: 14px; display: flex; gap: 6px; justify-content: center; }
+
+  /* SUPPLIER */
+  .supplier-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; box-shadow: var(--shadow); }
+  .supplier-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .supplier-icon { width: 40px; height: 40px; border-radius: 10px; background: var(--info-bg); display: flex; align-items: center; justify-content: center; color: var(--info); font-size: 18px; }
+  .supplier-name { font-size: 14px; font-weight: 600; }
+  .supplier-cat { font-size: 12px; color: var(--text-secondary); }
+
+  /* REPORT */
+  .report-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; cursor: pointer; transition: all var(--transition); box-shadow: var(--shadow); }
+  .report-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary); }
+  .report-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 12px; }
+
+  /* PURCHASE */
+  .po-status-bar { display: flex; gap: 0; margin-bottom: 20px; }
+  .po-step { flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 500; background: var(--bg); border: 1px solid var(--border); position: relative; }
+  .po-step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+  .po-step:last-child { border-radius: 0 var(--radius) var(--radius) 0; }
+  .po-step.done { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+  .po-step.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .user-card-grid { grid-template-columns: 1fr 1fr; }
+    .form-row, .form-row-3 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    #sidebar { transform: translateX(-100%); }
+    #sidebar.mobile-open { transform: translateX(0); width: 230px; }
+    #topbar { left: 0 !important; }
+    #main { margin-left: 0 !important; padding: 16px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .user-card-grid { grid-template-columns: 1fr; }
+    .login-card { width: 92vw; padding: 28px 20px; }
+  }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 999;
+    background: var(--primary); color: white; padding: 12px 20px;
+    border-radius: var(--radius); font-size: 13.5px; font-weight: 500;
+    box-shadow: var(--shadow-md); opacity: 0; transform: translateY(10px);
+    transition: all 0.3s ease; pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  select.form-control option { background: white; }
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+  .text-right { text-align: right; }
+  .text-center { text-align: center; }
+  .mt-4 { margin-top: 4px; }
+  .mt-8 { margin-top: 8px; }
+  .flex { display: flex; }
+  .flex-center { display: flex; align-items: center; }
+  .gap-8 { gap: 8px; }
+  .gap-12 { gap: 12px; }
+  .mb-0 { margin-bottom: 0; }
+
+  .pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 14px; padding: 2px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE (shown first) -->
+<div id="page-login">
+  <!-- Decorative background circles -->
+  <div style="position:absolute;width:500px;height:500px;border-radius:50%;border:1px solid rgba(255,255,255,0.06);top:-150px;left:-150px;pointer-events:none;"></div>
+  <div style="position:absolute;width:700px;height:700px;border-radius:50%;border:1px solid rgba(255,255,255,0.04);top:-250px;left:-250px;pointer-events:none;"></div>
+  <div style="position:absolute;width:400px;height:400px;border-radius:50%;border:1px solid rgba(255,255,255,0.05);bottom:-120px;right:-100px;pointer-events:none;"></div>
+  <div style="position:absolute;width:600px;height:600px;border-radius:50%;border:1px solid rgba(255,255,255,0.03);bottom:-220px;right:-200px;pointer-events:none;"></div>
+  <!-- Top-left hotel branding -->
+  <div style="position:absolute;top:28px;left:36px;display:flex;align-items:center;gap:10px;">
+    <div style="width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;color:white;font-size:17px;"><i class="fa fa-hotel"></i></div>
+    <div>
+      <div style="font-size:14px;font-weight:700;color:white;letter-spacing:0.3px;">Grand Royal Hotel</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.5);letter-spacing:0.5px;">Management System</div>
+    </div>
+  </div>
+  <!-- Accent dot top-right -->
+  <div style="position:absolute;top:28px;right:36px;">
+    <span style="font-size:11px;color:rgba(255,255,255,0.35);letter-spacing:0.5px;">v2.5.1</span>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="logo-big"><i class="fa fa-hotel"></i></div>
+      <h2>Welcome back</h2>
+      <p>Sign in to your account to continue</p>
+    </div>
+    <div class="login-input-group">
+      <i class="fa fa-envelope"></i>
+      <input type="text" id="login-email" placeholder="Email or username" value="admin@grandhotel.com">
+    </div>
+    <div class="login-input-group">
+      <i class="fa fa-lock"></i>
+      <input type="password" id="login-pw" placeholder="Password" value="password123">
+      <button class="pw-toggle" onclick="togglePw()"><i class="fa fa-eye" id="pw-eye"></i></button>
+    </div>
+    <div class="forgot-link"><a onclick="showToast('Password reset link sent to your email.')">Forgot password?</a></div>
+    <button class="login-btn" onclick="doLogin()"><i class="fa fa-sign-in-alt"></i> Sign in</button>
+    <div class="login-footer">© 2026 Grand Royal Hotel &nbsp;·&nbsp; All rights reserved</div>
+  </div>
+  <div class="login-tagline">GRAND ROYAL HOTEL &nbsp;·&nbsp; POWERED BY HMS</div>
+</div>
+
+<!-- APP SHELL (hidden until login) -->
+<div id="app-shell" style="display:none; width:100%;">
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="fa fa-hotel"></i></div>
+    <div>
+      <div class="logo-text">HMS</div>
+      <div class="logo-sub">Grand Royal Hotel</div>
+    </div>
+  </div>
+  <div class="nav-section-label">Main</div>
+  <div class="nav-item active" onclick="navigate('dashboard', this)"><i class="fa fa-th-large"></i><span>Dashboard</span></div>
+  <div class="nav-item" onclick="navigate('inventory', this)"><i class="fa fa-boxes"></i><span>Inventory</span><span class="nav-badge">3</span></div>
+  <div class="nav-section-label">Operations</div>
+  <div class="nav-item" onclick="navigate('suppliers', this)"><i class="fa fa-truck"></i><span>Suppliers</span></div>
+  <div class="nav-item" onclick="navigate('purchases', this)"><i class="fa fa-shopping-cart"></i><span>Purchases</span></div>
+  <div class="nav-section-label">Analytics</div>
+  <div class="nav-item" onclick="navigate('reports', this)"><i class="fa fa-chart-bar"></i><span>Reports</span></div>
+  <div class="nav-section-label">System</div>
+  <div class="nav-item" onclick="navigate('users', this)"><i class="fa fa-users"></i><span>User Management</span></div>
+  <div class="nav-item" onclick="navigate('profile', this)"><i class="fa fa-user-circle"></i><span>Profile Settings</span></div>
+  <div class="sidebar-footer">
+    <div class="user-widget">
+      <div class="user-avatar">AD</div>
+      <div>
+        <div class="user-name">Admin</div>
+        <div class="user-role">Administrator</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- TOPBAR -->
+<header id="topbar">
+  <button class="topbar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar"><i class="fa fa-bars"></i></button>
+  <div>
+    <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="topbar-breadcrumb" id="page-breadcrumb">HMS / Dashboard</div>
+  </div>
+  <div class="topbar-right">
+    <button class="topbar-btn notif-btn" onclick="showToast('3 low-stock alerts pending.')"><i class="fa fa-bell"></i><span class="notif-dot"></span></button>
+    <button class="topbar-btn" onclick="showToast('Backup initiated successfully.')"><i class="fa fa-database"></i> Backup</button>
+    <button class="topbar-btn btn-danger" style="border-color:var(--danger);color:var(--danger);" onclick="doLogout()"><i class="fa fa-sign-out-alt"></i> Sign out</button>
+  </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main id="main">
+
+  <!-- ===== DASHBOARD ===== -->
+  <div id="dashboard" class="page active">
+    <div class="section-header">
+      <div>
+        <div class="section-title">Dashboard</div>
+        <div class="section-sub">Monday, June 30, 2025 &nbsp;·&nbsp; Grand Royal Hotel</div>
+      </div>
+      <button class="btn btn-primary" onclick="showToast('Report exported.')"><i class="fa fa-download"></i> Export Report</button>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e6f2fb;color:#1a6fa8;"><i class="fa fa-boxes"></i></div>
+        <div>
+          <div class="stat-label">Total Items</div>
+          <div class="stat-value">1,284</div>
+          <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 4.2% this month</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e6f4ed;color:#2a7d4f;"><i class="fa fa-shopping-cart"></i></div>
+        <div>
+          <div class="stat-label">Purchases (Jun)</div>
+          <div class="stat-value">$48,390</div>
+          <div class="stat-trend trend-up"><i class="fa fa-arrow-up"></i> 11.5% vs last month</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fdf3e6;color:#c87b1a;"><i class="fa fa-truck"></i></div>
+        <div>
+          <div class="stat-label">Active Suppliers</div>
+          <div class="stat-value">34</div>
+          <div class="stat-trend" style="color:var(--text-muted)"><i class="fa fa-minus"></i> No change</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fdecea;color:#c0392b;"><i class="fa fa-exclamation-triangle"></i></div>
+        <div>
+          <div class="stat-label">Low Stock Alerts</div>
+          <div class="stat-value">12</div>
+          <div class="stat-trend trend-down"><i class="fa fa-arrow-up"></i> 3 new since yesterday</div>
+        </div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Monthly Purchase Trend</div>
+            <div class="card-subtitle">Jan – Jun 2025</div>
+          </div>
+          <div class="tab-group" style="margin-bottom:0;">
+            <button class="tab-btn active" onclick="this.parentNode.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">6M</button>
+            <button class="tab-btn" onclick="this.parentNode.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active')">1Y</button>
+          </div>
+        </div>
+        <div class="chart-container" style="height:220px;"><canvas id="purchaseChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Inventory by Category</div>
+            <div class="card-subtitle">Current stock distribution</div>
+          </div>
+        </div>
+        <div class="chart-container" style="height:220px;"><canvas id="categoryChart"></canvas></div>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Recent Activity</div><span class="badge badge-info">Live</span></div>
+        <div class="activity-item">
+          <div class="activity-dot" style="background:#e6f2fb;color:#1a6fa8;"><i class="fa fa-plus"></i></div>
+          <div><div class="activity-text"><b>PO-2025-089</b> created — Linen & Bedding Co.</div><div class="activity-time">2 min ago · Admin</div></div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="background:#e6f4ed;color:#2a7d4f;"><i class="fa fa-check"></i></div>
+          <div><div class="activity-text"><b>PO-2025-086</b> approved and dispatched</div><div class="activity-time">1 hr ago · Sophanith Yorn</div></div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="background:#fdecea;color:#c0392b;"><i class="fa fa-exclamation"></i></div>
+          <div><div class="activity-text">Low stock alert: <b>Hand Sanitizer 500ml</b> (4 units left)</div><div class="activity-time">3 hrs ago · System</div></div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="background:#fdf3e6;color:#c87b1a;"><i class="fa fa-user-plus"></i></div>
+          <div><div class="activity-text">New supplier <b>Fresh Farms PH</b> registered</div><div class="activity-time">Yesterday · Admin</div></div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-dot" style="background:#e6f2fb;color:#1a6fa8;"><i class="fa fa-file-invoice"></i></div>
+          <div><div class="activity-text">Invoice <b>INV-2025-204</b> generated and sent</div><div class="activity-time">Yesterday · Admin</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Low Stock Alerts</div><button class="btn btn-sm btn-outline" onclick="navigate('inventory',document.querySelector('[onclick*=inventory]'))">View all</button></div>
+        <div class="alert alert-warning"><i class="fa fa-exclamation-triangle"></i> 12 items need restocking soon</div>
+        <div class="stock-item">
+          <div style="width:34px;height:34px;border-radius:8px;background:#fdecea;display:flex;align-items:center;justify-content:center;color:var(--danger);font-size:13px;"><i class="fa fa-spray-can"></i></div>
+          <div class="stock-info">
+            <div class="stock-name">Hand Sanitizer 500ml</div>
+            <div class="stock-qty">4 / 50 units</div>
+            <div class="progress-bar stock-progress"><div class="progress-fill" style="width:8%;background:var(--danger);"></div></div>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="showToast('Reorder request sent.')">Reorder</button>
+        </div>
+        <div class="stock-item">
+          <div style="width:34px;height:34px;border-radius:8px;background:#fdf3e6;display:flex;align-items:center;justify-content:center;color:var(--warning);font-size:13px;"><i class="fa fa-bed"></i></div>
+          <div class="stock-info">
+            <div class="stock-name">Pillow Covers (White)</div>
+            <div class="stock-qty">18 / 100 units</div>
+            <div class="progress-bar stock-progress"><div class="progress-fill" style="width:18%;background:var(--warning);"></div></div>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="showToast('Reorder request sent.')">Reorder</button>
+        </div>
+        <div class="stock-item">
+          <div style="width:34px;height:34px;border-radius:8px;background:#fdecea;display:flex;align-items:center;justify-content:center;color:var(--danger);font-size:13px;"><i class="fa fa-soap"></i></div>
+          <div class="stock-info">
+            <div class="stock-name">Shower Gel (Guest Size)</div>
+            <div class="stock-qty">11 / 200 units</div>
+            <div class="progress-bar stock-progress"><div class="progress-fill" style="width:5%;background:var(--danger);"></div></div>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="showToast('Reorder request sent.')">Reorder</button>
+        </div>
+        <div class="stock-item">
+          <div style="width:34px;height:34px;border-radius:8px;background:#fdf3e6;display:flex;align-items:center;justify-content:center;color:var(--warning);font-size:13px;"><i class="fa fa-utensils"></i></div>
+          <div class="stock-info">
+            <div class="stock-name">Coffee Sachets (Box/50)</div>
+            <div class="stock-qty">6 / 30 boxes</div>
+            <div class="progress-bar stock-progress"><div class="progress-fill" style="width:20%;background:var(--warning);"></div></div>
+          </div>
+          <button class="btn btn-sm btn-primary" onclick="showToast('Reorder request sent.')">Reorder</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== INVENTORY ===== -->
+  <div id="inventory" class="page">
+    <div class="section-header">
+      <div><div class="section-title">Inventory</div><div class="section-sub">Manage stock items, categories, and quantities</div></div>
+      <div class="flex gap-8">
+        <button class="btn btn-outline" onclick="showToast('Inventory exported to Excel.')"><i class="fa fa-file-excel"></i> Export</button>
+        <button class="btn btn-primary" onclick="document.getElementById('modal-additem').classList.add('open')"><i class="fa fa-plus"></i> Add Item</button>
+      </div>
+    </div>
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+      <div class="stat-card"><div class="stat-icon" style="background:#e6f2fb;color:#1a6fa8;"><i class="fa fa-layer-group"></i></div><div><div class="stat-label">Total SKUs</div><div class="stat-value">1,284</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#e6f4ed;color:#2a7d4f;"><i class="fa fa-check-circle"></i></div><div><div class="stat-label">In Stock</div><div class="stat-value">1,108</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fdf3e6;color:#c87b1a;"><i class="fa fa-clock"></i></div><div><div class="stat-label">Low Stock</div><div class="stat-value">164</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fdecea;color:#c0392b;"><i class="fa fa-times-circle"></i></div><div><div class="stat-label">Out of Stock</div><div class="stat-value">12</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="flex gap-8" style="flex:1;">
+          <div class="search-bar" style="flex:1;max-width:300px;">
+            <i class="fa fa-search"></i>
+            <input type="text" placeholder="Search items..." oninput="filterInventory(this.value)">
+          </div>
+          <select class="form-control" style="width:150px;" onchange="showToast('Filter applied.')"><option>All Categories</option><option>Housekeeping</option><option>Food & Beverage</option><option>Maintenance</option><option>Front Office</option><option>Laundry</option></select>
+          <select class="form-control" style="width:130px;" onchange="showToast('Filter applied.')"><option>All Status</option><option>In Stock</option><option>Low Stock</option><option>Out of Stock</option></select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="inventory-table">
+          <thead><tr><th>Item Code</th><th>Item Name</th><th>Category</th><th>Unit</th><th>Qty</th><th>Reorder Level</th><th>Unit Cost</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>#ITM-001</td><td>Shower Gel (Guest Size)</td><td>Housekeeping</td><td>Piece</td><td>11</td><td>50</td><td>$0.85</td><td><span class="badge badge-danger"><i class="fa fa-circle" style="font-size:6px;"></i> Low Stock</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Item edit opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('Item deleted.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td>#ITM-002</td><td>Pillow Covers (White)</td><td>Housekeeping</td><td>Piece</td><td>18</td><td>100</td><td>$3.20</td><td><span class="badge badge-warning"><i class="fa fa-circle" style="font-size:6px;"></i> Low Stock</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Item edit opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('Item deleted.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td>#ITM-003</td><td>Hand Sanitizer 500ml</td><td>Housekeeping</td><td>Bottle</td><td>4</td><td>50</td><td>$2.50</td><td><span class="badge badge-danger"><i class="fa fa-circle" style="font-size:6px;"></i> Low Stock</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Item edit opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('Item deleted.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td>#ITM-004</td><td>Coffee Sachets (Box/50)</td><td>Food & Beverage</td><td>Box</td><td>6</td><td>30</td><td>$8.00</td><td><span class="badge badge-warning"><i class="fa fa-circle" style="font-size:6px;"></i> Low Stock</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Item edit opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('Item deleted.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td>#ITM-005</td><td>Bath Towels (Large)</td><td>Laundry</td><td>Piece</td><td>340</td><td>80</td><td>$6.50</td><td><span class="badge badge-success"><i class="fa fa-circle" style="font-size:6px;"></i> In Stock</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Item edit opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('Item deleted.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td>#ITM-006</td><td>Toilet Paper Rolls</td><td>Housekeeping</td><td>Roll</td><td>820</td><td>200</td><td>$0.40</td><td><span class="badge badge-success"><i class="fa fa-circle" style="font-size:6px;"></i> In Stock</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Item edit opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('Item deleted.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td>#ITM-007</td><td>All-Purpose Cleaner 5L</td><td>Maintenance</td><td>Container</td><td>0</td><td>20</td><td>$12.00</td><td><span class="badge badge-danger"><i class="fa fa-circle" style="font-size:6px;"></i> Out of Stock</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Item edit opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('Item deleted.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td>#ITM-008</td><td>Shampoo (Sachet)</td><td>Housekeeping</td><td>Sachet</td><td>560</td><td>200</td><td>$0.30</td><td><span class="badge badge-success"><i class="fa fa-circle" style="font-size:6px;"></i> In Stock</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Item edit opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('Item deleted.')"><i class="fa fa-trash"></i></button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0 0;border-top:1px solid var(--border);margin-top:8px;">
+        <span style="font-size:12.5px;color:var(--text-secondary);">Showing 8 of 1,284 items</span>
+        <div class="flex gap-8">
+          <button class="btn btn-sm btn-outline" onclick="showToast('Previous page.')">← Prev</button>
+          <button class="btn btn-sm btn-primary">1</button>
+          <button class="btn btn-sm btn-outline" onclick="showToast('Next page.')">2</button>
+          <button class="btn btn-sm btn-outline" onclick="showToast('Next page.')">3</button>
+          <button class="btn btn-sm btn-outline" onclick="showToast('Next page.')">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SUPPLIERS ===== -->
+  <div id="suppliers" class="page">
+    <div class="section-header">
+      <div><div class="section-title">Suppliers</div><div class="section-sub">Manage supplier information and relationships</div></div>
+      <button class="btn btn-primary" onclick="document.getElementById('modal-addsupplier').classList.add('open')"><i class="fa fa-plus"></i> Add Supplier</button>
+    </div>
+    <div class="card mb-0" style="margin-bottom:16px;">
+      <div class="flex gap-8">
+        <div class="search-bar" style="flex:1;max-width:300px;"><i class="fa fa-search"></i><input type="text" placeholder="Search suppliers..."></div>
+        <select class="form-control" style="width:160px;"><option>All Categories</option><option>Food & Beverage</option><option>Housekeeping</option><option>Maintenance</option><option>Laundry</option></select>
+        <select class="form-control" style="width:140px;"><option>All Status</option><option>Active</option><option>Inactive</option></select>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="supplier-card">
+        <div class="supplier-header"><div class="supplier-icon"><i class="fa fa-building"></i></div><div><div class="supplier-name">Linen & Bedding Co.</div><div class="supplier-cat">Housekeeping</div></div><span class="badge badge-success" style="margin-left:auto;">Active</span></div>
+        <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.8;"><i class="fa fa-user" style="width:16px;"></i> Maria Reyes — Account Manager<br><i class="fa fa-phone" style="width:16px;"></i> +63 917 555 0132<br><i class="fa fa-envelope" style="width:16px;"></i> m.reyes@linenbedding.com<br><i class="fa fa-shopping-bag" style="width:16px;"></i> 42 orders · $18,400 total</div>
+        <div class="flex gap-8 mt-8" style="margin-top:12px;"><button class="btn btn-sm btn-outline" onclick="showToast('Viewing transaction history.')"><i class="fa fa-history"></i> History</button><button class="btn btn-sm btn-outline" onclick="showToast('Edit supplier opened.')"><i class="fa fa-edit"></i> Edit</button></div>
+      </div>
+      <div class="supplier-card">
+        <div class="supplier-header"><div class="supplier-icon"><i class="fa fa-leaf"></i></div><div><div class="supplier-name">Fresh Farms PH</div><div class="supplier-cat">Food & Beverage</div></div><span class="badge badge-success" style="margin-left:auto;">Active</span></div>
+        <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.8;"><i class="fa fa-user" style="width:16px;"></i> Ramon dela Cruz — Sales Rep<br><i class="fa fa-phone" style="width:16px;"></i> +63 918 555 0189<br><i class="fa fa-envelope" style="width:16px;"></i> sales@freshfarmsph.com<br><i class="fa fa-shopping-bag" style="width:16px;"></i> 28 orders · $9,850 total</div>
+        <div class="flex gap-8 mt-8" style="margin-top:12px;"><button class="btn btn-sm btn-outline" onclick="showToast('Viewing transaction history.')"><i class="fa fa-history"></i> History</button><button class="btn btn-sm btn-outline" onclick="showToast('Edit supplier opened.')"><i class="fa fa-edit"></i> Edit</button></div>
+      </div>
+      <div class="supplier-card">
+        <div class="supplier-header"><div class="supplier-icon"><i class="fa fa-tools"></i></div><div><div class="supplier-name">ProMaint Solutions</div><div class="supplier-cat">Maintenance</div></div><span class="badge badge-success" style="margin-left:auto;">Active</span></div>
+        <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.8;"><i class="fa fa-user" style="width:16px;"></i> Leo Marquez — Key Account<br><i class="fa fa-phone" style="width:16px;"></i> +63 912 555 0244<br><i class="fa fa-envelope" style="width:16px;"></i> leo@promaint.ph<br><i class="fa fa-shopping-bag" style="width:16px;"></i> 15 orders · $7,200 total</div>
+        <div class="flex gap-8 mt-8" style="margin-top:12px;"><button class="btn btn-sm btn-outline" onclick="showToast('Viewing transaction history.')"><i class="fa fa-history"></i> History</button><button class="btn btn-sm btn-outline" onclick="showToast('Edit supplier opened.')"><i class="fa fa-edit"></i> Edit</button></div>
+      </div>
+      <div class="supplier-card">
+        <div class="supplier-header"><div class="supplier-icon"><i class="fa fa-tshirt"></i></div><div><div class="supplier-name">CleanWave Laundry</div><div class="supplier-cat">Laundry</div></div><span class="badge badge-warning" style="margin-left:auto;">Review</span></div>
+        <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.8;"><i class="fa fa-user" style="width:16px;"></i> Anna Tan — Operations Lead<br><i class="fa fa-phone" style="width:16px;"></i> +63 915 555 0317<br><i class="fa fa-envelope" style="width:16px;"></i> anna@cleanwave.com<br><i class="fa fa-shopping-bag" style="width:16px;"></i> 9 orders · $3,100 total</div>
+        <div class="flex gap-8 mt-8" style="margin-top:12px;"><button class="btn btn-sm btn-outline" onclick="showToast('Viewing transaction history.')"><i class="fa fa-history"></i> History</button><button class="btn btn-sm btn-outline" onclick="showToast('Edit supplier opened.')"><i class="fa fa-edit"></i> Edit</button></div>
+      </div>
+      <div class="supplier-card">
+        <div class="supplier-header"><div class="supplier-icon"><i class="fa fa-coffee"></i></div><div><div class="supplier-name">BrewHouse Supplies</div><div class="supplier-cat">Food & Beverage</div></div><span class="badge badge-success" style="margin-left:auto;">Active</span></div>
+        <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.8;"><i class="fa fa-user" style="width:16px;"></i> Chris Gomez — Sales<br><i class="fa fa-phone" style="width:16px;"></i> +63 910 555 0411<br><i class="fa fa-envelope" style="width:16px;"></i> c.gomez@brewhouse.ph<br><i class="fa fa-shopping-bag" style="width:16px;"></i> 21 orders · $5,650 total</div>
+        <div class="flex gap-8 mt-8" style="margin-top:12px;"><button class="btn btn-sm btn-outline" onclick="showToast('Viewing transaction history.')"><i class="fa fa-history"></i> History</button><button class="btn btn-sm btn-outline" onclick="showToast('Edit supplier opened.')"><i class="fa fa-edit"></i> Edit</button></div>
+      </div>
+      <div class="supplier-card">
+        <div class="supplier-header"><div class="supplier-icon"><i class="fa fa-flask"></i></div><div><div class="supplier-name">SaniChem Corp.</div><div class="supplier-cat">Housekeeping</div></div><span class="badge badge-neutral" style="margin-left:auto;">Inactive</span></div>
+        <div style="font-size:12.5px;color:var(--text-secondary);line-height:1.8;"><i class="fa fa-user" style="width:16px;"></i> Beth Cruz — Regional Mgr<br><i class="fa fa-phone" style="width:16px;"></i> +63 916 555 0523<br><i class="fa fa-envelope" style="width:16px;"></i> b.cruz@sanichem.com<br><i class="fa fa-shopping-bag" style="width:16px;"></i> 7 orders · $2,400 total</div>
+        <div class="flex gap-8 mt-8" style="margin-top:12px;"><button class="btn btn-sm btn-outline" onclick="showToast('Viewing transaction history.')"><i class="fa fa-history"></i> History</button><button class="btn btn-sm btn-outline" onclick="showToast('Supplier reactivated.')"><i class="fa fa-redo"></i> Reactivate</button></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PURCHASES ===== -->
+  <div id="purchases" class="page">
+    <div class="section-header">
+      <div><div class="section-title">Purchases</div><div class="section-sub">Create and track purchase orders</div></div>
+      <div class="flex gap-8">
+        <button class="btn btn-outline" onclick="showToast('Purchase list exported.')"><i class="fa fa-download"></i> Export</button>
+        <button class="btn btn-primary" onclick="document.getElementById('modal-addpo').classList.add('open')"><i class="fa fa-plus"></i> New PO</button>
+      </div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon" style="background:#e6f2fb;color:#1a6fa8;"><i class="fa fa-file-alt"></i></div><div><div class="stat-label">Total POs</div><div class="stat-value">89</div><div class="stat-trend" style="color:var(--text-muted);">This year</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fdf3e6;color:#c87b1a;"><i class="fa fa-hourglass-half"></i></div><div><div class="stat-label">Pending Approval</div><div class="stat-value">7</div><div class="stat-trend trend-down">Needs action</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#e6f4ed;color:#2a7d4f;"><i class="fa fa-check-double"></i></div><div><div class="stat-label">Approved</div><div class="stat-value">74</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fdecea;color:#c0392b;"><i class="fa fa-dollar-sign"></i></div><div><div class="stat-label">Total Spend (Jun)</div><div class="stat-value">$48,390</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="tab-group" style="margin-bottom:0;">
+          <button class="tab-btn active" onclick="switchTab(this,'tab-all')">All POs</button>
+          <button class="tab-btn" onclick="switchTab(this,'tab-pending')">Pending (7)</button>
+          <button class="tab-btn" onclick="switchTab(this,'tab-approved')">Approved</button>
+          <button class="tab-btn" onclick="switchTab(this,'tab-delivered')">Delivered</button>
+        </div>
+        <div class="flex gap-8">
+          <div class="search-bar" style="width:220px;"><i class="fa fa-search"></i><input type="text" placeholder="Search PO#..."></div>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>PO Number</th><th>Supplier</th><th>Date</th><th>Items</th><th>Total Amount</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td><b>PO-2025-089</b></td><td>Linen & Bedding Co.</td><td>Jun 29, 2025</td><td>8</td><td>$3,200.00</td><td><span class="badge badge-warning">Pending</span></td><td><button class="btn btn-sm btn-outline" onclick="showToast('PO viewed.')"><i class="fa fa-eye"></i></button> <button class="btn btn-sm btn-primary btn-sm" onclick="showToast('PO approved!')"><i class="fa fa-check"></i> Approve</button></td></tr>
+            <tr><td><b>PO-2025-088</b></td><td>Fresh Farms PH</td><td>Jun 28, 2025</td><td>14</td><td>$1,850.00</td><td><span class="badge badge-warning">Pending</span></td><td><button class="btn btn-sm btn-outline" onclick="showToast('PO viewed.')"><i class="fa fa-eye"></i></button> <button class="btn btn-sm btn-primary btn-sm" onclick="showToast('PO approved!')"><i class="fa fa-check"></i> Approve</button></td></tr>
+            <tr><td><b>PO-2025-087</b></td><td>BrewHouse Supplies</td><td>Jun 27, 2025</td><td>5</td><td>$620.00</td><td><span class="badge badge-info">In Transit</span></td><td><button class="btn btn-sm btn-outline" onclick="showToast('PO viewed.')"><i class="fa fa-eye"></i></button> <button class="btn btn-sm btn-outline" onclick="showToast('Invoice generated.')"><i class="fa fa-file-invoice"></i></button></td></tr>
+            <tr><td><b>PO-2025-086</b></td><td>ProMaint Solutions</td><td>Jun 25, 2025</td><td>3</td><td>$4,100.00</td><td><span class="badge badge-success">Delivered</span></td><td><button class="btn btn-sm btn-outline" onclick="showToast('PO viewed.')"><i class="fa fa-eye"></i></button> <button class="btn btn-sm btn-outline" onclick="showToast('Invoice generated.')"><i class="fa fa-file-invoice"></i></button></td></tr>
+            <tr><td><b>PO-2025-085</b></td><td>Linen & Bedding Co.</td><td>Jun 22, 2025</td><td>12</td><td>$5,880.00</td><td><span class="badge badge-success">Delivered</span></td><td><button class="btn btn-sm btn-outline" onclick="showToast('PO viewed.')"><i class="fa fa-eye"></i></button> <button class="btn btn-sm btn-outline" onclick="showToast('Invoice generated.')"><i class="fa fa-file-invoice"></i></button></td></tr>
+            <tr><td><b>PO-2025-084</b></td><td>SaniChem Corp.</td><td>Jun 20, 2025</td><td>6</td><td>$980.00</td><td><span class="badge badge-danger">Cancelled</span></td><td><button class="btn btn-sm btn-outline" onclick="showToast('PO viewed.')"><i class="fa fa-eye"></i></button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REPORTS ===== -->
+  <div id="reports" class="page">
+    <div class="section-header">
+      <div><div class="section-title">Reports</div><div class="section-sub">Generate, filter, and export operational reports</div></div>
+    </div>
+    <div class="grid-3" style="margin-bottom:20px;">
+      <div class="report-card" onclick="showToast('Invoice Report generated. Ready to print/export.')">
+        <div class="report-icon" style="background:#e6f2fb;color:#1a6fa8;"><i class="fa fa-file-invoice"></i></div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Invoice Report</div>
+        <div style="font-size:12px;color:var(--text-secondary);">View and print all invoices for any date range</div>
+        <div class="flex gap-8" style="margin-top:12px;"><span class="badge badge-info"><i class="fa fa-print"></i> Print</span><span class="badge badge-info"><i class="fa fa-file-pdf"></i> PDF</span><span class="badge badge-info"><i class="fa fa-file-excel"></i> Excel</span></div>
+      </div>
+      <div class="report-card" onclick="showToast('Transaction Report generated.')">
+        <div class="report-icon" style="background:#e6f4ed;color:#2a7d4f;"><i class="fa fa-exchange-alt"></i></div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Transaction Report</div>
+        <div style="font-size:12px;color:var(--text-secondary);">Full transaction log with filters by date and type</div>
+        <div class="flex gap-8" style="margin-top:12px;"><span class="badge badge-success"><i class="fa fa-print"></i> Print</span><span class="badge badge-success"><i class="fa fa-file-pdf"></i> PDF</span><span class="badge badge-success"><i class="fa fa-file-excel"></i> Excel</span></div>
+      </div>
+      <div class="report-card" onclick="showToast('Stock Report generated.')">
+        <div class="report-icon" style="background:#fdf3e6;color:#c87b1a;"><i class="fa fa-boxes"></i></div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Stock Report</div>
+        <div style="font-size:12px;color:var(--text-secondary);">Current stock levels by category and location</div>
+        <div class="flex gap-8" style="margin-top:12px;"><span class="badge badge-warning"><i class="fa fa-print"></i> Print</span><span class="badge badge-warning"><i class="fa fa-file-pdf"></i> PDF</span><span class="badge badge-warning"><i class="fa fa-file-excel"></i> Excel</span></div>
+      </div>
+      <div class="report-card" onclick="showToast('Low Stock Report generated. 12 critical items found.')">
+        <div class="report-icon" style="background:#fdecea;color:#c0392b;"><i class="fa fa-exclamation-triangle"></i></div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Low Stock Report</div>
+        <div style="font-size:12px;color:var(--text-secondary);">Items below reorder threshold — act fast</div>
+        <div class="flex gap-8" style="margin-top:12px;"><span class="badge badge-danger"><i class="fa fa-print"></i> Print</span><span class="badge badge-danger"><i class="fa fa-file-pdf"></i> PDF</span><span class="badge badge-danger"><i class="fa fa-file-excel"></i> Excel</span></div>
+      </div>
+      <div class="report-card" onclick="showToast('Invoice Product Report generated.')">
+        <div class="report-icon" style="background:#f3e6fb;color:#7b1ac8;"><i class="fa fa-clipboard-list"></i></div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Invoice Product Report</div>
+        <div style="font-size:12px;color:var(--text-secondary);">Products ordered per invoice, supplier-wise summary</div>
+        <div class="flex gap-8" style="margin-top:12px;"><span class="badge" style="background:#f3e6fb;color:#7b1ac8;"><i class="fa fa-print"></i> Print</span><span class="badge" style="background:#f3e6fb;color:#7b1ac8;"><i class="fa fa-file-pdf"></i> PDF</span></div>
+      </div>
+      <div class="report-card" onclick="showToast('Audit log exported.')">
+        <div class="report-icon" style="background:#eef3f7;color:var(--text-secondary);"><i class="fa fa-shield-alt"></i></div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px;">Audit Log Report</div>
+        <div style="font-size:12px;color:var(--text-secondary);">User activity log for compliance and review</div>
+        <div class="flex gap-8" style="margin-top:12px;"><span class="badge badge-neutral"><i class="fa fa-print"></i> Print</span><span class="badge badge-neutral"><i class="fa fa-file-pdf"></i> PDF</span><span class="badge badge-neutral"><i class="fa fa-file-excel"></i> Excel</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Quick Report Preview</div>
+        <div class="flex gap-8">
+          <select class="form-control" style="width:160px;"><option>Invoice Report</option><option>Transaction Report</option><option>Stock Report</option></select>
+          <input type="date" class="form-control" style="width:150px;" value="2025-06-01">
+          <input type="date" class="form-control" style="width:150px;" value="2025-06-30">
+          <button class="btn btn-primary" onclick="showToast('Report generated and ready.')"><i class="fa fa-play"></i> Generate</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Invoice #</th><th>Date</th><th>Supplier</th><th>Items</th><th>Amount</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>INV-2025-204</td><td>Jun 29, 2025</td><td>Linen & Bedding Co.</td><td>8</td><td>$3,200.00</td><td><span class="badge badge-success">Paid</span></td></tr>
+            <tr><td>INV-2025-203</td><td>Jun 27, 2025</td><td>BrewHouse Supplies</td><td>5</td><td>$620.00</td><td><span class="badge badge-warning">Pending</span></td></tr>
+            <tr><td>INV-2025-202</td><td>Jun 25, 2025</td><td>ProMaint Solutions</td><td>3</td><td>$4,100.00</td><td><span class="badge badge-success">Paid</span></td></tr>
+            <tr><td>INV-2025-201</td><td>Jun 22, 2025</td><td>Linen & Bedding Co.</td><td>12</td><td>$5,880.00</td><td><span class="badge badge-success">Paid</span></td></tr>
+            <tr><td>INV-2025-200</td><td>Jun 18, 2025</td><td>Fresh Farms PH</td><td>9</td><td>$1,240.00</td><td><span class="badge badge-success">Paid</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px;padding-top:14px;border-top:1px solid var(--border);margin-top:8px;">
+        <button class="btn btn-outline" onclick="showToast('Report printed.')"><i class="fa fa-print"></i> Print</button>
+        <button class="btn btn-outline" onclick="showToast('Exported to PDF.')"><i class="fa fa-file-pdf"></i> PDF</button>
+        <button class="btn btn-primary" onclick="showToast('Exported to Excel.')"><i class="fa fa-file-excel"></i> Excel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== USERS ===== -->
+  <div id="users" class="page">
+    <div class="section-header">
+      <div><div class="section-title">User Management</div><div class="section-sub">Manage accounts, roles, and access levels</div></div>
+      <button class="btn btn-primary" onclick="document.getElementById('modal-adduser').classList.add('open')"><i class="fa fa-user-plus"></i> Add User</button>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon" style="background:#e6f2fb;color:#1a6fa8;"><i class="fa fa-users"></i></div><div><div class="stat-label">Total Users</div><div class="stat-value">7</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#e6f4ed;color:#2a7d4f;"><i class="fa fa-user-check"></i></div><div><div class="stat-label">Active</div><div class="stat-value">7</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fdecea;color:#c0392b;"><i class="fa fa-user-slash"></i></div><div><div class="stat-label">Inactive</div><div class="stat-value">0</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fdf3e6;color:#c87b1a;"><i class="fa fa-user-shield"></i></div><div><div class="stat-label">Admins</div><div class="stat-value">1</div></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="flex gap-8">
+          <div class="search-bar" style="width:250px;"><i class="fa fa-search"></i><input type="text" placeholder="Search users..."></div>
+          <select class="form-control" style="width:160px;"><option>All Roles</option><option>Administrator</option><option>Manager</option><option>Staff</option><option>Viewer</option></select>
+        </div>
+        <select class="form-control" style="width:140px;"><option>All Status</option><option>Active</option><option>Inactive</option></select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Department</th><th>Last Login</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td><div class="flex-center gap-8"><div class="user-avatar" style="width:32px;height:32px;font-size:12px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;">AD</div>Admin</div></td><td>admin@grandhotel.com</td><td><span class="badge badge-danger">Administrator</span></td><td>Management</td><td>Today, 9:02 AM</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Edit user opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('Cannot delete your own account.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td><div class="flex-center gap-8"><div style="width:32px;height:32px;font-size:12px;border-radius:50%;background:#2a7d4f;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;flex-shrink:0;">SY</div>Mr. Yorn Sophanith</div></td><td>y.sophanith@grandhotel.com</td><td><span class="badge badge-info">Manager</span></td><td>Management</td><td>Today, 8:45 AM</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Edit user opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('User deactivated.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td><div class="flex-center gap-8"><div style="width:32px;height:32px;font-size:12px;border-radius:50%;background:#c87b1a;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;flex-shrink:0;">VR</div>Vn. Voeun Ravith</div></td><td>v.ravith@grandhotel.com</td><td><span class="badge badge-neutral">Staff</span></td><td>Housekeeping</td><td>Jun 28, 2025</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Edit user opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('User deactivated.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td><div class="flex-center gap-8"><div style="width:32px;height:32px;font-size:12px;border-radius:50%;background:#7b1ac8;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;flex-shrink:0;">HP</div>Vn. Hon Phearek</div></td><td>h.phearek@grandhotel.com</td><td><span class="badge badge-neutral">Staff</span></td><td>Front Office</td><td>Jun 27, 2025</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Edit user opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('User deactivated.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td><div class="flex-center gap-8"><div style="width:32px;height:32px;font-size:12px;border-radius:50%;background:#5a7a94;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;flex-shrink:0;">SS</div>Mr. San Sokny</div></td><td>s.sokny@grandhotel.com</td><td><span class="badge badge-neutral">Viewer</span></td><td>Finance</td><td>Jun 25, 2025</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Edit user opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('User deactivated.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td><div class="flex-center gap-8"><div style="width:32px;height:32px;font-size:12px;border-radius:50%;background:#5a7a94;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;flex-shrink:0;">CP</div>Ms. Chean Panha</div></td><td>c.panha@grandhotel.com</td><td><span class="badge badge-neutral">Viewer</span></td><td>Operations</td><td>Jun 24, 2025</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Edit user opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('User deactivated.')"><i class="fa fa-trash"></i></button></td></tr>
+            <tr><td><div class="flex-center gap-8"><div style="width:32px;height:32px;font-size:12px;border-radius:50%;background:#5a7a94;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;flex-shrink:0;">NP</div>Mr. Noeun Panha</div></td><td>n.panha@grandhotel.com</td><td><span class="badge badge-neutral">Viewer</span></td><td>F&B</td><td>Jun 23, 2025</td><td><span class="badge badge-success">Active</span></td><td><button class="btn btn-sm btn-outline btn-icon" onclick="showToast('Edit user opened.')"><i class="fa fa-edit"></i></button> <button class="btn btn-sm btn-danger btn-icon" onclick="showToast('User deactivated.')"><i class="fa fa-trash"></i></button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PROFILE ===== -->
+  <div id="profile" class="page">
+    <div class="section-header">
+      <div><div class="section-title">Profile Settings</div><div class="section-sub">Manage your account information and preferences</div></div>
+    </div>
+    <div class="grid-2">
+      <div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Personal Information</div></div>
+          <div style="display:flex;align-items:center;gap:18px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+            <div class="profile-avatar-lg">AD<div class="avatar-edit" onclick="showToast('Profile picture upload opened.')"><i class="fa fa-camera"></i></div></div>
+            <div>
+              <div style="font-size:17px;font-weight:700;">Admin</div>
+              <div style="font-size:13px;color:var(--text-secondary);">Administrator · Grand Royal Hotel</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Member since March 2023</div>
+            </div>
+          </div>
+          <div class="form-row"><div class="form-group"><label class="form-label">First Name</label><input class="form-control" value="Admin"></div><div class="form-group"><label class="form-label">Last Name</label><input class="form-control" value="User"></div></div>
+          <div class="form-group"><label class="form-label">Email Address</label><input class="form-control" value="admin@grandhotel.com"></div>
+          <div class="form-row"><div class="form-group"><label class="form-label">Phone Number</label><input class="form-control" value="+63 917 555 0001"></div><div class="form-group"><label class="form-label">Department</label><input class="form-control" value="Management"></div></div>
+          <div class="form-group"><label class="form-label">Bio / Notes</label><textarea class="form-control" rows="3">Hotel operations administrator with hospitality management experience.</textarea></div>
+          <button class="btn btn-primary" onclick="showToast('Profile updated successfully.')"><i class="fa fa-save"></i> Save Changes</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Account Preferences</div></div>
+          <div class="form-row"><div class="form-group"><label class="form-label">Language</label><select class="form-control"><option>English (US)</option><option>Filipino</option><option>Japanese</option></select></div><div class="form-group"><label class="form-label">Timezone</label><select class="form-control"><option>Asia/Manila (GMT+8)</option><option>UTC</option><option>Asia/Singapore</option></select></div></div>
+          <div class="form-group"><label class="form-label">Date Format</label><select class="form-control"><option>MM/DD/YYYY</option><option>DD/MM/YYYY</option><option>YYYY-MM-DD</option></select></div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+            <label style="display:flex;align-items:center;gap:10px;font-size:13.5px;cursor:pointer;"><input type="checkbox" checked> Email notifications for low stock alerts</label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:13.5px;cursor:pointer;"><input type="checkbox" checked> Daily summary reports via email</label>
+            <label style="display:flex;align-items:center;gap:10px;font-size:13.5px;cursor:pointer;"><input type="checkbox"> SMS alerts for critical items</label>
+          </div>
+          <button class="btn btn-outline" style="margin-top:14px;" onclick="showToast('Preferences saved.')"><i class="fa fa-sliders-h"></i> Save Preferences</button>
+        </div>
+      </div>
+      <div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Change Password</div></div>
+          <div class="form-group"><label class="form-label">Current Password</label><input type="password" class="form-control" placeholder="Enter current password"></div>
+          <div class="form-group"><label class="form-label">New Password</label><input type="password" class="form-control" placeholder="At least 8 characters"></div>
+          <div class="form-group"><label class="form-label">Confirm New Password</label><input type="password" class="form-control" placeholder="Repeat new password"></div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Password must be at least 8 characters and include a number and a special character.</div>
+          <button class="btn btn-primary" onclick="showToast('Password updated successfully.')"><i class="fa fa-lock"></i> Update Password</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Security</div></div>
+          <div class="alert alert-info"><i class="fa fa-info-circle"></i> Two-factor authentication is currently disabled.</div>
+          <div style="font-size:13.5px;color:var(--text-secondary);margin-bottom:14px;">Enable 2FA to add an extra layer of security to your account using an authenticator app or SMS.</div>
+          <button class="btn btn-outline" onclick="showToast('2FA setup wizard opened.')"><i class="fa fa-shield-alt"></i> Enable 2FA</button>
+          <div class="divider"></div>
+          <div class="card-title" style="font-size:14px;margin-bottom:10px;">Recent Sessions</div>
+          <div style="font-size:13px;">
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eef3f7;"><span><i class="fa fa-desktop" style="color:var(--text-muted);width:18px;"></i> Windows 11 · Chrome 125</span><span style="color:var(--success);font-weight:500;font-size:12px;">Current</span></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eef3f7;"><span><i class="fa fa-mobile-alt" style="color:var(--text-muted);width:18px;"></i> Android · Chrome Mobile</span><span style="color:var(--text-muted);font-size:12px;">Jun 28, 2025</span></div>
+            <div style="display:flex;justify-content:space-between;padding:8px 0;"><span><i class="fa fa-laptop" style="color:var(--text-muted);width:18px;"></i> macOS · Safari 17</span><span style="color:var(--text-muted);font-size:12px;">Jun 25, 2025</span></div>
+          </div>
+          <button class="btn btn-danger" style="margin-top:12px;" onclick="showToast('All other sessions terminated.')"><i class="fa fa-sign-out-alt"></i> Sign out all other sessions</button>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">Backup & Restore</div></div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;">Last backup: <b>Jun 29, 2025 at 2:00 AM</b> · Auto-backup is enabled (daily at 2 AM).</div>
+          <div class="flex gap-8">
+            <button class="btn btn-outline" onclick="showToast('Manual backup started.')"><i class="fa fa-database"></i> Backup Now</button>
+            <button class="btn btn-outline" onclick="showToast('Restore dialog opened.')"><i class="fa fa-undo"></i> Restore</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-additem">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add Inventory Item</span><button class="modal-close" onclick="document.getElementById('modal-additem').classList.remove('open')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-group"><label class="form-label">Item Name *</label><input class="form-control" placeholder="e.g. Shower Gel 50ml"></div><div class="form-group"><label class="form-label">Category *</label><select class="form-control"><option>Select category</option><option>Housekeeping</option><option>Food & Beverage</option><option>Maintenance</option><option>Front Office</option><option>Laundry</option></select></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Unit of Measure</label><select class="form-control"><option>Piece</option><option>Box</option><option>Bottle</option><option>Roll</option><option>Sachet</option><option>Container</option></select></div><div class="form-group"><label class="form-label">Reorder Level</label><input class="form-control" type="number" placeholder="e.g. 50"></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Initial Quantity</label><input class="form-control" type="number" placeholder="0"></div><div class="form-group"><label class="form-label">Unit Cost ($)</label><input class="form-control" type="number" step="0.01" placeholder="0.00"></div></div>
+      <div class="form-group"><label class="form-label">Notes / Description</label><textarea class="form-control" rows="2" placeholder="Optional notes..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('modal-additem').classList.remove('open')">Cancel</button><button class="btn btn-primary" onclick="document.getElementById('modal-additem').classList.remove('open');showToast('Item added successfully.')"><i class="fa fa-save"></i> Save Item</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-addsupplier">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Register Supplier</span><button class="modal-close" onclick="document.getElementById('modal-addsupplier').classList.remove('open')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-group"><label class="form-label">Company Name *</label><input class="form-control" placeholder="Supplier company name"></div><div class="form-group"><label class="form-label">Category *</label><select class="form-control"><option>Select</option><option>Housekeeping</option><option>Food & Beverage</option><option>Maintenance</option><option>Laundry</option></select></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Contact Person</label><input class="form-control" placeholder="Full name"></div><div class="form-row"><div class="form-group"><label class="form-label">Phone Number</label><input class="form-control" placeholder="+63 900 000 0000"></div></div>
+      <div class="form-group"><label class="form-label">Email Address</label><input class="form-control" placeholder="supplier@company.com"></div>
+      <div class="form-group"><label class="form-label">Address</label><textarea class="form-control" rows="2" placeholder="Full address..."></textarea></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Payment Terms</label><select class="form-control"><option>Net 30</option><option>Net 15</option><option>Net 7</option><option>COD</option></select></div><div class="form-group"><label class="form-label">Status</label><select class="form-control"><option>Active</option><option>Inactive</option></select></div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('modal-addsupplier').classList.remove('open')">Cancel</button><button class="btn btn-primary" onclick="document.getElementById('modal-addsupplier').classList.remove('open');showToast('Supplier registered successfully.')"><i class="fa fa-save"></i> Register Supplier</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-addpo">
+  <div class="modal" style="width:580px;">
+    <div class="modal-header"><span class="modal-title">Create Purchase Order</span><button class="modal-close" onclick="document.getElementById('modal-addpo').classList.remove('open')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-group"><label class="form-label">Supplier *</label><select class="form-control"><option>Select supplier</option><option>Linen & Bedding Co.</option><option>Fresh Farms PH</option><option>ProMaint Solutions</option><option>BrewHouse Supplies</option></select></div><div class="form-group"><label class="form-label">Expected Delivery</label><input class="form-control" type="date"></div></div>
+      <div class="form-group"><label class="form-label">Priority</label><select class="form-control"><option>Normal</option><option>Urgent</option><option>Low</option></select></div>
+      <div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;">
+        <table style="margin:0;"><thead style="background:#f7fafc;"><tr><th>Item</th><th>Qty</th><th>Unit Cost</th><th>Total</th><th></th></tr></thead><tbody><tr><td><select class="form-control" style="border:none;border-radius:0;"><option>Select item</option><option>Shower Gel 500ml</option><option>Pillow Covers</option><option>Hand Sanitizer</option></select></td><td><input class="form-control" type="number" style="border:none;border-radius:0;width:70px;" value="100"></td><td><input class="form-control" style="border:none;border-radius:0;width:80px;" value="$0.85"></td><td style="font-weight:600;">$85.00</td><td><button class="btn btn-sm btn-danger btn-icon" onclick="showToast('Row removed.')"><i class="fa fa-times"></i></button></td></tr></tbody></table>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="showToast('New line added.')"><i class="fa fa-plus"></i> Add Item</button>
+      <div class="divider"></div>
+      <div style="text-align:right;font-size:14px;"><span style="color:var(--text-secondary);">Subtotal:</span> <b>$85.00</b><br><span style="color:var(--text-secondary);">Tax (12%):</span> <b>$10.20</b><br><span style="font-size:16px;">Total: <b style="color:var(--primary);">$95.20</b></span></div>
+      <div class="form-group" style="margin-top:12px;"><label class="form-label">Remarks</label><textarea class="form-control" rows="2" placeholder="Any special instructions..."></textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('modal-addpo').classList.remove('open')">Cancel</button><button class="btn btn-outline" onclick="document.getElementById('modal-addpo').classList.remove('open');showToast('PO saved as draft.')">Save Draft</button><button class="btn btn-primary" onclick="document.getElementById('modal-addpo').classList.remove('open');showToast('Purchase Order PO-2025-090 created and submitted for approval.')"><i class="fa fa-paper-plane"></i> Submit PO</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-adduser">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Add New User</span><button class="modal-close" onclick="document.getElementById('modal-adduser').classList.remove('open')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-group"><label class="form-label">First Name *</label><input class="form-control" placeholder="First name"></div><div class="form-group"><label class="form-label">Last Name *</label><input class="form-control" placeholder="Last name"></div></div>
+      <div class="form-group"><label class="form-label">Email Address *</label><input class="form-control" placeholder="user@grandhotel.com"></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">Role *</label><select class="form-control"><option>Select role</option><option>Administrator</option><option>Manager</option><option>Staff</option><option>Viewer</option></select></div><div class="form-group"><label class="form-label">Department</label><select class="form-control"><option>Management</option><option>Housekeeping</option><option>Food & Beverage</option><option>Front Office</option><option>Maintenance</option><option>Finance</option></select></div></div>
+      <div class="form-group"><label class="form-label">Temporary Password</label><input type="password" class="form-control" placeholder="Temporary password"><div style="font-size:11.5px;color:var(--text-muted);margin-top:4px;">User will be prompted to change on first login.</div></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="document.getElementById('modal-adduser').classList.remove('open')">Cancel</button><button class="btn btn-primary" onclick="document.getElementById('modal-adduser').classList.remove('open');showToast('User account created. Welcome email sent.')"><i class="fa fa-user-plus"></i> Create User</button></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+let sidebarCollapsed = false;
+
+function doLogin() {
+  const e = document.getElementById('login-email').value.trim();
+  const p = document.getElementById('login-pw').value.trim();
+  if (!e || !p) { showToastCustom('Please enter your credentials.', '#c0392b'); return; }
+  document.getElementById('page-login').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'flex';
+  setTimeout(() => { initCharts(); }, 100);
+}
+
+function doLogout() {
+  document.getElementById('app-shell').style.display = 'none';
+  document.getElementById('page-login').style.display = 'flex';
+}
+
+function togglePw() {
+  const pw = document.getElementById('login-pw');
+  const eye = document.getElementById('pw-eye');
+  if (pw.type === 'password') { pw.type = 'text'; eye.classList.replace('fa-eye', 'fa-eye-slash'); }
+  else { pw.type = 'password'; eye.classList.replace('fa-eye-slash', 'fa-eye'); }
+}
+
+function toggleSidebar() {
+  sidebarCollapsed = !sidebarCollapsed;
+  document.getElementById('sidebar').classList.toggle('collapsed', sidebarCollapsed);
+  document.getElementById('topbar').classList.toggle('shifted', sidebarCollapsed);
+  document.getElementById('main').classList.toggle('shifted', sidebarCollapsed);
+}
+
+const pageTitles = { dashboard: 'Dashboard', inventory: 'Inventory', suppliers: 'Suppliers', purchases: 'Purchases', reports: 'Reports', users: 'User Management', profile: 'Profile Settings' };
+
+function navigate(pageId, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('page-title').textContent = pageTitles[pageId] || pageId;
+  document.getElementById('page-breadcrumb').textContent = 'HMS / ' + (pageTitles[pageId] || pageId);
+  if (pageId === 'dashboard') setTimeout(initCharts, 50);
+}
+
+function filterInventory(val) {
+  const rows = document.querySelectorAll('#inventory-table tbody tr');
+  rows.forEach(r => { r.style.display = r.textContent.toLowerCase().includes(val.toLowerCase()) ? '' : 'none'; });
+}
+
+function switchTab(btn, tab) {
+  btn.parentNode.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  showToast('Filter: ' + btn.textContent.trim());
+}
+
+let chartsInit = false;
+function initCharts() {
+  if (chartsInit) return;
+  chartsInit = true;
+  const c1 = document.getElementById('purchaseChart');
+  const c2 = document.getElementById('categoryChart');
+  if (!c1 || !c2) return;
+  new Chart(c1, {
+    type: 'bar',
+    data: {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      datasets: [{
+        label: 'Purchases ($)',
+        data: [32000, 28500, 41200, 38900, 44100, 48390],
+        backgroundColor: 'rgba(26,58,92,0.8)',
+        borderRadius: 6,
+        borderSkipped: false,
+      }, {
+        label: 'Budget ($)',
+        data: [40000, 40000, 45000, 45000, 50000, 50000],
+        type: 'line',
+        borderColor: '#c8963e',
+        borderWidth: 2,
+        pointBackgroundColor: '#c8963e',
+        pointRadius: 3,
+        fill: false,
+        tension: 0.4,
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 11 }, usePointStyle: true, boxWidth: 8 } } }, scales: { y: { beginAtZero: false, min: 20000, ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'k', font: { size: 11 } }, grid: { color: 'rgba(0,0,0,0.04)' } }, x: { ticks: { font: { size: 11 } }, grid: { display: false } } } }
+  });
+  new Chart(c2, {
+    type: 'doughnut',
+    data: {
+      labels: ['Housekeeping', 'Food & Bev', 'Laundry', 'Maintenance', 'Front Office'],
+      datasets: [{ data: [420, 280, 210, 180, 194], backgroundColor: ['#1a3a5c', '#c8963e', '#2a7d4f', '#c87b1a', '#1a6fa8'], borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { font: { size: 11 }, padding: 12, usePointStyle: true } } }, cutout: '65%' }
+  });
+}
+
+function showToast(msg) { showToastCustom(msg, '#1a3a5c'); }
+function showToastCustom(msg, bg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = bg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  }
+});
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+});
+</script>
+</body>
+</html>
